@@ -1,6 +1,6 @@
 from django.http import Http404
 from django.shortcuts import render, redirect
-from empresarios.models import Empresas, Documento
+from empresarios.models import Empresas, Documento, Metricas
 from .models import PropostaInvestimento
 from django.contrib import messages
 from django.contrib.messages import constants
@@ -20,10 +20,16 @@ def sugestao(request):
 
             if tipo == 'C':
                 empresas = Empresas.objects.filter(tempo_existencia='+5').filter(estagio="E")
+                
             elif tipo == 'D':
                 empresas = Empresas.objects.filter(tempo_existencia__in=['-6', '+6', '+1']).exclude(estagio="E")
-            
+                
+            elif tipo == 'G':
+                empresas = Empresas.objects.all()
+                
+                
             empresas = empresas.filter(area__in=area)
+            
             
             empresas_selecionadas = []
             for empresa in empresas:
@@ -51,7 +57,9 @@ def ver_empresa(request, id):
 
         percentual_disponivel = empresa.percentual_equity - percentual_vendido
         
-        return render(request, 'ver_empresa.html', {'empresa': empresa, 'documentos': documentos, 'percentual_vendido': int(percentual_vendido), 'concretizado': concretizado, 'percentual_disponivel': percentual_disponivel})
+        metricas = Metricas.objects.filter(empresa=empresa)
+        
+        return render(request, 'ver_empresa.html', {'empresa': empresa, 'documentos': documentos, 'percentual_vendido': int(percentual_vendido), 'concretizado': concretizado, 'percentual_disponivel': percentual_disponivel, 'metricas': metricas})
 
 def realizar_proposta(request, id):
     if not request.user.is_authenticated:

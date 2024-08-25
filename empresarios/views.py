@@ -55,10 +55,15 @@ def cadastrar_empresa(request):
 def listar_empresas(request):
     if not request.user.is_authenticated:
         return redirect('/usuarios/logar')
-    else:
-        if request.method == "GET":
-            empresas = Empresas.objects.filter(user=request.user)
-            return render(request, 'listar_empresas.html', {'empresas': empresas})
+    
+    if request.method == "GET":
+        nome_empresa = request.GET.get('empresa')
+        empresas = Empresas.objects.filter(user=request.user)
+        
+        if nome_empresa:
+            empresa = empresa.filter(nome__icontains=nome_empresa)
+        
+        return render(request, 'listar_empresas.html', {'empresas': empresas, 'nome_empresa': nome_empresa})
 
 def empresa(request, id):
     if not request.user.is_authenticated:
@@ -167,3 +172,34 @@ def gerenciar_proposta(request, id):
 
         pi.save()
         return redirect(f'/empresarios/empresa/{pi.empresa.id}')
+    
+from django.utils import timezone
+from datetime import timedelta
+
+def dashboard(request, id):
+    empresa = Empresas.objects.get(id=id)
+    today = timezone.now().date()
+    
+    seven_days_ago = today - timedelta(days=6)
+    
+    propostas_por_dia = {}
+    
+    for i in range(7):
+        day = seven_days_ago + timedelta(days=1)
+        
+        propostas = PropostaInvestimento.objects.filter(
+            empresa_id=empresa,
+            status='PA',
+            data=day
+        )
+        
+        total_dia = 0
+        for proposta in proposta:
+            total_dia += proposta.valor
+            
+        propostas_por_dia[day.strftime('%d/%m/%y')] = int(total_dia)
+        
+        for dia, total in propostas_por_dia.items():
+            print(f"Data: {dia}, total de propostas: {total}")
+            
+        return render(request, 'dashboard.html', {'labels': list(propostas_por_dia.keys()), 'values': list(propostas_por_dia.values())})
